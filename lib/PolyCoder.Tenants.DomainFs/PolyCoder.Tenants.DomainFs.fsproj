@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="TenantsDomainStrings.fs" />
+    <Compile Include="Validators.fs" />
+    <Compile Include="TenantsDescriptor.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AccidentalFish.FSharp.Validation" Version="0.10.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="6.0.0" />
+  </ItemGroup>
+
+</Project>
