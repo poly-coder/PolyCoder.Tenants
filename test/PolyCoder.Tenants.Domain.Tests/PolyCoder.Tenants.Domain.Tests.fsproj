@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="TestUtils.fs" />
     <Compile Include="ValidatorsTests.fs" />
+    <Compile Include="TenantDescriptorsTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -29,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\lib\PolyCoder.Tenants.DomainFs\PolyCoder.Tenants.DomainFs.fsproj" />
+    <ProjectReference Include="..\..\lib\PolyCoder.Tenants.Domain\PolyCoder.Tenants.Domain.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

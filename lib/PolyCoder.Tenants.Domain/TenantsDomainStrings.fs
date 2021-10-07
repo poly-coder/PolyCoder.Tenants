@@ -1,4 +1,4 @@
-﻿namespace PolyCoder.Tenants.DomainFs
+﻿namespace PolyCoder.Tenants.Domain
 
 type ITenantsDomainStrings =
   abstract mustNotBeNull: string

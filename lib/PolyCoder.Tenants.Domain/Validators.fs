@@ -1,4 +1,4 @@
-﻿module PolyCoder.Tenants.DomainFs.Validators
+﻿module PolyCoder.Tenants.Domain.Validators
 
 open AccidentalFish.FSharp.Validation
 

@@ -1,8 +1,8 @@
 ﻿[<RequireQualifiedAccess>]
-module PolyCoder.Tenants.DomainFs.TenantDescriptors
+module PolyCoder.Tenants.Domain.TenantDescriptors
 
 open AccidentalFish.FSharp.Validation
-    
+
 type Data = {
   title: string
   description: string
@@ -110,7 +110,7 @@ module PrintUpdates =
   type ProcessCommand =
     | LogMessage of string
 
-  let handle log event =
+  let handle event =
     match event with
     | WasUpdated data ->
       LogMessage (sprintf "Tenant %s was updated" data.title)

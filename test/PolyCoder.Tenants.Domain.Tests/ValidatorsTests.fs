@@ -1,4 +1,4 @@
-module PolyCoder.Tenants.DomainFs.ValidatorsTests
+module PolyCoder.Tenants.Domain.ValidatorsTests
 
 open AccidentalFish.FSharp.Validation
 open Xunit
