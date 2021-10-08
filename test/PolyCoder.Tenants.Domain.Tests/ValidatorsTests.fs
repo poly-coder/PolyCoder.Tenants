@@ -11,8 +11,11 @@ let mockStrings =
       member _.mustNotBeNull = "mustNotBeNull"
       member _.mustNotBeEmpty = "mustNotBeEmpty"
       member _.mustNotBeWhiteSpace = "mustNotBeWhiteSpace"
-      member _.mustNotBeShorterThan v = sprintf "mustNotBeShorterThan%i" v
-      member _.mustNotBeLongerThan v = sprintf "mustNotBeLongerThan%i" v
+      member _.mustNotBeShorterThan value = sprintf "mustNotBeShorterThan%i" value
+      member _.mustNotBeLongerThan value = sprintf "mustNotBeLongerThan%i" value
+      member _.mustMatchPattern pattern = sprintf "mustMatchPattern%s" pattern
+
+      member _.mustBeAValidUrlSegment = "mustBeAValidUrlSegment"
   }
 
 (***************
@@ -67,7 +70,7 @@ let isNotEmptyWithAnyNonEmptyShouldBeOk (NonEmptyString value) =
 (***************************
  * isNotEmptyOrWhiteSpace
  ***************************)
-  
+
 [<Fact>]
 let isNotEmptyOrWhiteSpaceWithNullShouldReturnError () =
   let propertyName = "my-property"
@@ -121,7 +124,7 @@ let isNotEmptyOrWhiteSpaceWithAnyNonEmptyShouldBeOk (NonWhiteSpaceString value) 
 (*********************
  * isNotShorterThan
  *********************)
-  
+
 [<Property>]
 let isNotShorterThanWithNullShouldBeOk (NonNegativeInt minLength) =
   let propertyName = "my-property"
@@ -139,7 +142,7 @@ type StringOfLengthAtLeast5Chars =
     |> Gen.filter (fun s -> String.length s >= 5)
     |> Gen.map StringOfLength
     |> Arb.fromGen
-  
+
 [<Property(Arbitrary = [| typeof<StringOfLengthAtLeast5Chars> |])>]
 let isNotShorterThanWithLongStringShouldBeOk (StringOfLength value) =
   let propertyName = "my-property"
@@ -154,7 +157,7 @@ type StringOfLengthAtMost4Chars =
     |> Gen.filter (fun s -> String.length s <= 4)
     |> Gen.map StringOfLength
     |> Arb.fromGen
-  
+
 [<Property(Arbitrary = [| typeof<StringOfLengthAtMost4Chars> |])>]
 let isNotShorterThanWithShortStringShouldReturnError (StringOfLength value) =
   let propertyName = "my-property"
@@ -170,7 +173,7 @@ let isNotShorterThanWithShortStringShouldReturnError (StringOfLength value) =
 (*********************
  * isNotShorterThan
  *********************)
-  
+
 [<Property>]
 let isNotLongerThanWithNullShouldBeOk (NonNegativeInt minLength) =
   let propertyName = "my-property"
@@ -178,14 +181,14 @@ let isNotLongerThanWithNullShouldBeOk (NonNegativeInt minLength) =
   let result = value |> Validators.isNotLongerThan minLength mockStrings propertyName
 
   test <@ result = Ok @>
-  
+
 [<Property(Arbitrary = [| typeof<StringOfLengthAtMost4Chars> |])>]
 let isNotLongerThanWithLongStringShouldBeOk (StringOfLength value) =
   let propertyName = "my-property"
   let result = value |> Validators.isNotLongerThan 4 mockStrings propertyName
 
   test <@ result = Ok @>
-  
+
 [<Property(Arbitrary = [| typeof<StringOfLengthAtLeast5Chars> |])>]
 let isNotLongerThanWithShortStringShouldReturnError (StringOfLength value) =
   let propertyName = "my-property"

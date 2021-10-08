@@ -68,7 +68,7 @@ let validateDataForNullTitleShouldReturnError () =
   let expectedError: ValidationItem = {
     errorCode = "isNotEmptyOrWhiteSpace"
     property = "title"
-    message = "mustNotBeNull"
+    message = mockStrings.mustNotBeNull
   }
 
   test <@ validation = Errors [ expectedError ] @>
@@ -86,13 +86,13 @@ let validateDataForEmptyTitleShouldReturnError () =
   let expectedError1: ValidationItem = {
     errorCode = "isNotEmptyOrWhiteSpace"
     property = "title"
-    message = "mustNotBeEmpty"
+    message = mockStrings.mustNotBeEmpty
   }
 
   let expectedError2: ValidationItem = {
     errorCode = "isNotShorterThan"
     property = "title"
-    message = "mustNotBeShorterThan5"
+    message = mockStrings.mustNotBeShorterThan 5
   }
 
   test <@ validation = Errors [ expectedError1; expectedError2 ] @>
@@ -110,7 +110,7 @@ let validateDataForShortTitleShouldReturnError () =
   let expectedError: ValidationItem = {
     errorCode = "isNotShorterThan"
     property = "title"
-    message = "mustNotBeShorterThan5"
+    message = mockStrings.mustNotBeShorterThan 5
   }
 
   test <@ validation = Errors [ expectedError ] @>
@@ -128,7 +128,7 @@ let validateDataForLongTitleShouldReturnError () =
   let expectedError: ValidationItem = {
     errorCode = "isNotLongerThan"
     property = "title"
-    message = "mustNotBeLongerThan80"
+    message = mockStrings.mustNotBeLongerThan 80
   }
 
   test <@ validation = Errors [ expectedError ] @>
@@ -146,7 +146,7 @@ let validateDataForLongDescriptionShouldReturnError () =
   let expectedError: ValidationItem = {
     errorCode = "isNotLongerThan"
     property = "description"
-    message = "mustNotBeLongerThan1000"
+    message = mockStrings.mustNotBeLongerThan 1000
   }
 
   test <@ validation = Errors [ expectedError ] @>
@@ -218,7 +218,7 @@ let aggregateApplyWasUpdatedShouldReturnModifiedState (NonEmptyString title) (No
 [<Fact>]
 let aggregateFoldShouldReturnModifiedState () =
   let state = TenantDescriptors.Aggregate.initialState
-  
+
   let events = [
     TenantDescriptors.WasUpdated { title = "A"; description = "a" }
     TenantDescriptors.WasUpdated { title = "B"; description = "b" }
@@ -239,7 +239,7 @@ let aggregateFoldShouldReturnModifiedState () =
 let aggregateHandleWithSameDataShouldReturnEmptyEvents () =
   let state: TenantDescriptors.Aggregate.State =
     { title = "My title"; description = "My description" }
-  
+
   let command = TenantDescriptors.Update { title = "My title"; description = "My description" }
 
   let result = command |> TenantDescriptors.Aggregate.handle mockStrings state
@@ -250,7 +250,7 @@ let aggregateHandleWithSameDataShouldReturnEmptyEvents () =
 let aggregateHandleWithNewDataShouldReturnWasUpdatedEvent () =
   let state: TenantDescriptors.Aggregate.State =
     { title = "My title"; description = "My description" }
-  
+
   let command = TenantDescriptors.Update { title = "New title"; description = "New description" }
 
   let result = command |> TenantDescriptors.Aggregate.handle mockStrings state
@@ -265,7 +265,7 @@ let aggregateHandleWithNewDataShouldReturnWasUpdatedEvent () =
 let aggregateHandleWithInvalidDataShouldReturnErrors () =
   let state: TenantDescriptors.Aggregate.State =
     { title = "My title"; description = "My description" }
-  
+
   let command = TenantDescriptors.Update { title = ""; description = "" }
 
   let result = command |> TenantDescriptors.Aggregate.handle mockStrings state

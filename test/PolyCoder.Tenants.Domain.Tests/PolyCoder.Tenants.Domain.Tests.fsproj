@@ -11,6 +11,7 @@
     <Compile Include="TestUtils.fs" />
     <Compile Include="ValidatorsTests.fs" />
     <Compile Include="TenantDescriptorsTests.fs" />
+    <Compile Include="TenantIdentifierTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

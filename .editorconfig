@@ -1,0 +1,8 @@
+[*.fs]
+indent_size = 2
+indent_char = space
+indent_with_tabs = false
+insert_final_newline = true
+end_of_line = crlf
+trim_trailing_whitespace = true
+charset = utf-8

@@ -1,8 +1,6 @@
 ﻿[<RequireQualifiedAccess>]
 module PolyCoder.Tenants.Domain.TenantDescriptors
 
-open AccidentalFish.FSharp.Validation
-
 type Data = {
   title: string
   description: string
@@ -15,6 +13,8 @@ type Command =
   | Update of data: Data
 
 module Validate =
+  open AccidentalFish.FSharp.Validation
+
   [<Literal>]
   let MinTitleLength = 5
 
@@ -41,6 +41,8 @@ module Validate =
     | Update d -> d |> data strings
 
 module Aggregate =
+  open AccidentalFish.FSharp.Validation
+
   type State = {
     title: string
     description: string
@@ -66,7 +68,7 @@ module Aggregate =
     match Validate.command strings command, command with
     | Errors es, _ ->
       Result.Error es
-    
+
     | Ok, Update data when data |> mustUpdate state ->
       Result.Ok [ WasUpdated { title = data.title; description = data.description } ]
 

@@ -6,3 +6,6 @@ type ITenantsDomainStrings =
   abstract mustNotBeWhiteSpace: string
   abstract mustNotBeShorterThan: int -> string
   abstract mustNotBeLongerThan: int -> string
+  abstract mustMatchPattern: string -> string
+
+  abstract mustBeAValidUrlSegment: string

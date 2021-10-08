@@ -1,6 +1,21 @@
 ﻿module PolyCoder.Tenants.Domain.Validators
 
 open AccidentalFish.FSharp.Validation
+open System.Text.RegularExpressions
+
+let mergeValidations validations =
+  validations
+  |> Seq.fold (fun prev -> function Ok -> prev | Errors es -> Seq.append prev es) Seq.empty
+  |> Seq.toList
+  |> function [] -> Ok | es -> Errors es
+
+let getErrors = function Ok -> [] | Errors es -> es
+
+let createPropertyValidator propertyName validators =
+  fun value ->
+    validators
+    |> Seq.map (fun validator -> validator propertyName value)
+    |> mergeValidations
 
 let internal errorItem errorCode property message : ValidationItem =
   {
@@ -53,3 +68,30 @@ let isNotLongerThan maxLength =
       strings.mustNotBeLongerThan maxLength |> error propertyName
     else
       Ok
+
+let matchesRegexWithMessage messageFn (regex: Regex) =
+  let error = error "matchesRegex"
+
+  fun propertyName (value: string) ->
+    if isNull value |> not && regex.IsMatch(value) |> not then
+      string regex |> messageFn |> error propertyName
+    else
+      Ok
+
+let matchesRegex (regex: Regex) =
+  fun (strings: ITenantsDomainStrings) ->
+    matchesRegexWithMessage strings.mustMatchPattern regex
+
+let matchesPatternAndOptionsWithMessage messageFn (options: RegexOptions) (pattern: string) =
+  let regex = Regex(pattern, options)
+  matchesRegexWithMessage messageFn regex
+
+let matchesPatternAndOptions (options: RegexOptions) (pattern: string) =
+  let regex = Regex(pattern, options)
+  matchesRegex regex
+
+let matchesPatternWithMessage messageFn (pattern: string) =
+  matchesPatternAndOptionsWithMessage messageFn RegexOptions.None pattern
+
+let matchesPattern (pattern: string) =
+  matchesPatternAndOptions RegexOptions.None pattern

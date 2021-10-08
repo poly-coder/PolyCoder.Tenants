@@ -7,7 +7,8 @@
   <ItemGroup>
     <Compile Include="TenantsDomainStrings.fs" />
     <Compile Include="Validators.fs" />
-    <Compile Include="TenantsDescriptor.fs" />
+    <Compile Include="TenantDescriptors.fs" />
+    <Compile Include="TenantIdentifier.fs" />
   </ItemGroup>
 
   <ItemGroup>
