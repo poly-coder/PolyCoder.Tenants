@@ -1,83 +1,87 @@
-﻿[<RequireQualifiedAccess>]
-module PolyCoder.Tenants.Domain.TenantIdentifier
+﻿module PolyCoder.Tenants.Domain.TenantIdentifier
+
+type TenantIdentifier = string
 
 type Event =
-  | WasRequested of identifier: string
-  | WasRejected of identifier: string
-  | WasApproved of identifier: string
+  | WasRequested of WasRequestedData
+  | WasApproved of WasApprovedData
+  | WasRejected
   | WasRetired
 
+and WasRequestedData = { id: TenantIdentifier }
+and WasApprovedData = { id: TenantIdentifier }
+
 type Command =
-  | Request of identifier: string
-  | Reject
-  | Approve
+  | Request of RequestData
+  | Approve of ApproveData
+  | Reject of RejectData
   | Retire
+
+and RequestData = { id: TenantIdentifier }
+and ApproveData = { id: TenantIdentifier }
+and RejectData = { id: TenantIdentifier }
 
 module Validate =
   open AccidentalFish.FSharp.Validation
 
-  let identifier strings =
-    Validators.createPropertyValidator "identifier" [
-      Validators.isNotEmptyOrWhiteSpace strings
-      Validators.matchesPatternWithMessage
-        (fun _ -> strings.mustBeAValidUrlSegment)
-        @"^([a-z][a-z0-9]*)(\-([a-z][a-z0-9]*))*$"
-    ]
+  let identifier strings propertyName =
+    Validators.createPropertyValidator
+      propertyName
+      [ Validators.isNotEmptyOrWhiteSpace strings
+        Validators.matchesPatternWithMessage
+          (fun _ -> strings.mustBeAValidUrlSegment)
+          @"^([a-z][a-z0-9]*)(\-([a-z][a-z0-9]*))*$" ]
 
-  let command strings = function
-    | Request id ->
-      identifier strings id
-    | Reject -> Ok
-    | Approve -> Ok
+  let requestData strings =
+    createValidatorFor<RequestData> () { validate (fun d -> d.id) [ identifier strings ] }
+
+  let rejectData strings =
+    createValidatorFor<RejectData> () { validate (fun d -> d.id) [ identifier strings ] }
+
+  let approveData strings =
+    createValidatorFor<ApproveData> () { validate (fun d -> d.id) [ identifier strings ] }
+
+  let command strings =
+    function
+    | Request data -> requestData strings data
+    | Reject data -> rejectData strings data
+    | Approve data -> approveData strings data
     | Retire -> Ok
 
 module Aggregate =
   open AccidentalFish.FSharp.Validation
 
   type State =
-    | NonExisting
-    | RequestingFirst of requestedIdentifier: string
-    | RequestingOther of requestedIdentifier: string * currentIdentifier: string
-    | Active of currentIdentifier: string
-    | Retired
+    { current: TenantIdentifier option
+      request: TenantIdentifier option }
 
-  let initialState = NonExisting
+  let initialState = { current = None; request = None }
 
   let apply state event =
     match event, state with
-    // WasRequested
-    | WasRequested requestedIdentifier, NonExisting
-    | WasRequested requestedIdentifier, Retired ->
-      RequestingFirst requestedIdentifier
+    | WasRequested { id = rid }, _ -> { state with request = Some rid }
 
-    | WasRequested requestedIdentifier, Active currentIdentifier ->
-      RequestingOther(requestedIdentifier, currentIdentifier)
+    | WasRejected, _ -> { state with request = None }
 
-    | WasRequested requestedIdentifier, RequestingFirst _ ->
-      RequestingFirst requestedIdentifier
+    | WasApproved { id = id }, _ -> { current = Some id; request = None }
 
-    | WasRequested requestedIdentifier, RequestingOther(_, currentIdentifier) ->
-      RequestingOther(requestedIdentifier, currentIdentifier)
+    | WasRetired, _ -> initialState
 
-    | WasRequested _, _ -> state
+  let handle strings (state: State) (command: Command) =
+    match Validate.command strings command with
+    | Errors es -> Error es
 
-    // WasRejected
-    | WasRejected identifier, RequestingFirst requestedIdentifier when requestedIdentifier = identifier ->
-      NonExisting
+    | Ok ->
+      match command, state with
+      | Request { id = rid }, { current = None } -> Result.Ok [ WasRequested { id = rid } ]
+      | Request { id = rid }, { current = Some cid } when rid <> cid -> Result.Ok [ WasRequested { id = rid } ]
+      | Request _, _ -> Result.Ok []
 
-    | WasRejected identifier, RequestingOther(requestedIdentifier, currentIdentifier) when requestedIdentifier = identifier ->
-      Active currentIdentifier
+      | Approve { id = id }, { request = Some rid } when id = rid -> Result.Ok [ WasApproved { id = id } ]
+      | Approve _, _ -> Result.Ok []
 
-    | WasRejected _, _ -> state
+      | Reject { id = id }, { request = Some rid } when id = rid -> Result.Ok [ WasRejected ]
+      | Reject _, _ -> Result.Ok []
 
-    // WasApproved
-    | WasApproved identifier, RequestingFirst requestedIdentifier when requestedIdentifier = identifier ->
-      Active requestedIdentifier
-
-    | WasApproved identifier, RequestingOther(requestedIdentifier, currentIdentifier) when requestedIdentifier = identifier ->
-      Active currentIdentifier
-
-    | WasApproved _, _ -> state
-
-    // WasRetired
-    | WasRetired, _ -> Retired
+      | Retire, state when state <> initialState -> Result.Ok [ WasRetired ]
+      | Retire, _ -> Result.Ok []

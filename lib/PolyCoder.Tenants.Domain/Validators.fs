@@ -11,11 +11,31 @@ let mergeValidations validations =
 
 let getErrors = function Ok -> [] | Errors es -> es
 
-let createPropertyValidator propertyName validators =
+let internal prependToProperty propertyName itemProperty =
+  match propertyName, itemProperty with
+  | "", _ -> itemProperty
+  | _, "" -> propertyName
+  | _, _ -> propertyName + "." + itemProperty
+
+let internal prependToItemProperty propertyName (item: ValidationItem) =
+  { item with property = prependToProperty propertyName item.property }
+
+let onProperty propertyName = function
+  | Ok -> Ok
+  | Errors es ->
+    es |> List.map (prependToItemProperty propertyName)
+       |> Errors
+
+let createValueValidator validators =
   fun value ->
     validators
-    |> Seq.map (fun validator -> validator propertyName value)
+    |> Seq.map (fun validator -> validator "" value)
     |> mergeValidations
+
+let createPropertyValidator propertyName validators =
+  fun value ->
+    createValueValidator validators value
+      |> onProperty propertyName
 
 let internal errorItem errorCode property message : ValidationItem =
   {

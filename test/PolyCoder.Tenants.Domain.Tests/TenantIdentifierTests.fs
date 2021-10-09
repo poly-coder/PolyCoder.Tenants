@@ -5,6 +5,7 @@ open Xunit
 open FsCheck
 open FsCheck.Xunit
 open Swensen.Unquote
+open PolyCoder.Tenants.Domain.TenantIdentifier
 
 let mockStrings = ValidatorsTests.mockStrings
 
@@ -12,24 +13,20 @@ let mockStrings = ValidatorsTests.mockStrings
  * Validate.identifier
  ******************)
 
-[<Theory>]
-[<InlineData("a")>]
-[<InlineData("abc")>]
-[<InlineData("abc-def")>]
-[<InlineData("abc-def-gh1")>]
-let validateIdentifierForValidInputShouldReturnOk (identifier: string) =
-  let validation = identifier |> TenantIdentifier.Validate.identifier mockStrings
+[<TenantProperty>]
+let validateIdentifierForValidInputShouldReturnOk (ValidTenantIdentifier identifier) =
+  let validation = identifier |> Validate.identifier mockStrings "id"
 
   test <@ validation = Ok @>
 
 [<Theory>]
 [<InlineData(null)>]
-let validateIdentifierForNullIdentifierShouldReturnErrors (identifier: string) =
-  let validation = identifier |> TenantIdentifier.Validate.identifier mockStrings
+let validateIdentifierForNullIdentifierShouldReturnErrors (identifier: TenantIdentifier) =
+  let validation = identifier |> Validate.identifier mockStrings "id"
 
   let expectedError: ValidationItem = {
-    errorCode = "isNotEmptyOrWhiteSpace"
-    property = "identifier"
+    errorCode = nameof(Validators.isNotEmptyOrWhiteSpace)
+    property = "id"
     message = mockStrings.mustNotBeNull
   }
 
@@ -37,57 +34,46 @@ let validateIdentifierForNullIdentifierShouldReturnErrors (identifier: string) =
 
 [<Theory>]
 [<InlineData("")>]
-let validateIdentifierForEmptyIdentifierShouldReturnErrors (identifier: string) =
-  let validation = identifier |> TenantIdentifier.Validate.identifier mockStrings
+let validateIdentifierForEmptyIdentifierShouldReturnErrors (identifier: TenantIdentifier) =
+  let validation = identifier |> Validate.identifier mockStrings "id"
 
   let expectedErrors: ValidationItem list = [
-    { errorCode = "isNotEmptyOrWhiteSpace"
-      property = "identifier"
+    { errorCode = nameof(Validators.isNotEmptyOrWhiteSpace)
+      property = "id"
       message = mockStrings.mustNotBeEmpty
     }
-    { errorCode = "matchesRegex"
-      property = "identifier"
+    { errorCode = nameof(Validators.matchesRegex)
+      property = "id"
       message = mockStrings.mustBeAValidUrlSegment
     }
   ]
 
   test <@ validation = Errors expectedErrors @>
 
-[<Theory>]
-[<InlineData(" ")>]
-[<InlineData("\t")>]
-[<InlineData("\r")>]
-[<InlineData("\n")>]
-[<InlineData("\r\n\t\f ")>]
-let validateIdentifierForWhitespaceIdentifierShouldReturnErrors (identifier: string) =
-  let validation = identifier |> TenantIdentifier.Validate.identifier mockStrings
+[<TenantProperty>]
+let validateIdentifierForWhitespaceIdentifierShouldReturnErrors (WhiteSpaceString identifier) =
+  let validation = identifier |> Validate.identifier mockStrings "id"
 
   let expectedErrors: ValidationItem list = [
-    { errorCode = "isNotEmptyOrWhiteSpace"
-      property = "identifier"
+    { errorCode = nameof(Validators.isNotEmptyOrWhiteSpace)
+      property = "id"
       message = mockStrings.mustNotBeWhiteSpace
     }
-    { errorCode = "matchesRegex"
-      property = "identifier"
+    { errorCode = nameof(Validators.matchesRegex)
+      property = "id"
       message = mockStrings.mustBeAValidUrlSegment
     }
   ]
 
   test <@ validation = Errors expectedErrors @>
 
-[<Theory>]
-[<InlineData("with spaces")>]
-[<InlineData("With-Upper-Case")>]
-[<InlineData("with-$ymbols-...")>]
-[<InlineData("with-0number-1first")>]
-[<InlineData("  with-initial-spaces")>]
-[<InlineData("with-trailling-spaces  ")>]
-let validateIdentifierForUnmatchingIdentifierShouldReturnErrors (identifier: string) =
-  let validation = identifier |> TenantIdentifier.Validate.identifier mockStrings
+[<TenantProperty>]
+let validateIdentifierForUnmatchingIdentifierShouldReturnErrors (UnmatchingTenantIdentifier identifier) =
+  let validation = identifier |> Validate.identifier mockStrings "id"
 
   let expectedErrors: ValidationItem list = [
-    { errorCode = "matchesRegex"
-      property = "identifier"
+    { errorCode = nameof(Validators.matchesRegex)
+      property = "id"
       message = mockStrings.mustBeAValidUrlSegment
     }
   ]
@@ -99,44 +85,58 @@ let validateIdentifierForUnmatchingIdentifierShouldReturnErrors (identifier: str
  ********************)
 
 [<Theory>]
-[<InlineData("my-identifier")>]
-let validateCommandForValidRequestShouldReturnOk (identifier: string) =
-  let command = TenantIdentifier.Request identifier
+[<InlineData("myid", true)>]
+[<InlineData("my-identifier", true)>]
+[<InlineData(null, false)>]
+[<InlineData("", false)>]
+[<InlineData(" \t\r\n", false)>]
+[<InlineData("my identifier", false)>]
+let validateCommandRequest (identifier: TenantIdentifier) (isValid: bool) =
+  let command = Request { id = identifier }
 
-  let validation = command |> TenantIdentifier.Validate.command mockStrings
+  let validation = command |> Validate.command mockStrings
 
-  test <@ validation = Ok @>
+  if isValid
+  then test <@ validation = Ok @>
+  else test <@ validation <> Ok @>
 
 [<Theory>]
-[<InlineData("my identifier")>]
-let validateCommandForInvalidRequestShouldReturnError (identifier: string) =
-  let command = TenantIdentifier.Request identifier
+[<InlineData("myid", true)>]
+[<InlineData("my-identifier", true)>]
+[<InlineData(null, false)>]
+[<InlineData("", false)>]
+[<InlineData(" \t\r\n", false)>]
+[<InlineData("my identifier", false)>]
+let validateCommandApprove (identifier: TenantIdentifier) (isValid: bool) =
+  let command = Approve { id = identifier }
 
-  let validation = command |> TenantIdentifier.Validate.command mockStrings
+  let validation = command |> Validate.command mockStrings
 
-  test <@ validation <> Ok @>
+  if isValid
+  then test <@ validation = Ok @>
+  else test <@ validation <> Ok @>
+
+[<Theory>]
+[<InlineData("myid", true)>]
+[<InlineData("my-identifier", true)>]
+[<InlineData(null, false)>]
+[<InlineData("", false)>]
+[<InlineData(" \t\r\n", false)>]
+[<InlineData("my identifier", false)>]
+let validateCommandReject (identifier: TenantIdentifier) (isValid: bool) =
+  let command = Reject { id = identifier }
+
+  let validation = command |> Validate.command mockStrings
+
+  if isValid
+  then test <@ validation = Ok @>
+  else test <@ validation <> Ok @>
 
 [<Fact>]
-let validateCommandForRejectShouldReturnOk () =
-  let command = TenantIdentifier.Reject
+let validateCommandRetire () =
+  let command = Retire
 
-  let validation = command |> TenantIdentifier.Validate.command mockStrings
-
-  test <@ validation = Ok @>
-
-[<Fact>]
-let validateCommandForApproveShouldReturnOk () =
-  let command = TenantIdentifier.Approve
-
-  let validation = command |> TenantIdentifier.Validate.command mockStrings
-
-  test <@ validation = Ok @>
-
-[<Fact>]
-let validateCommandForRetireShouldReturnOk () =
-  let command = TenantIdentifier.Retire
-
-  let validation = command |> TenantIdentifier.Validate.command mockStrings
+  let validation = command |> Validate.command mockStrings
 
   test <@ validation = Ok @>
 
@@ -146,20 +146,192 @@ let validateCommandForRetireShouldReturnOk () =
 
 [<Fact>]
 let aggregateInitialStateShouldReturnNonExisting () =
-  let state = TenantIdentifier.Aggregate.initialState
+  let state = Aggregate.initialState
+  let expectedState : Aggregate.State = { current = None; request = None }
 
-  test <@ state = TenantIdentifier.Aggregate.NonExisting @>
+  test <@ state = expectedState @>
 
 (********************
  * Aggregate.apply
  ********************)
 
-[<Fact>]
-let aggregateApplyWasRequestedToNonExistingShouldReturnRequestingFirst () =
-  let state = TenantIdentifier.Aggregate.NonExisting
-  let event = TenantIdentifier.WasRequested "my-identifier"
-  let expectedState = TenantIdentifier.Aggregate.RequestingFirst "my-identifier"
+[<TenantProperty>]
+let aggregateApplyWasRequestedToAnyStateShouldReturnAStateWithGivenRequestedId
+  (state: Aggregate.State)
+  (ValidTenantIdentifier rid) =
+  let event = WasRequested { id = rid }
+  let expectedState = { state with request = Some rid }
 
-  let result = event |> TenantIdentifier.Aggregate.apply state
+  let result = event |> Aggregate.apply state
 
   test <@ result = expectedState @>
+
+[<TenantProperty>]
+let aggregateApplyWasRejectedToAnyStateShouldReturnAStateWithoutPendingRequest
+  (state: Aggregate.State) =
+  let event = WasRejected
+  let expectedState = { state with request = None }
+
+  let result = event |> Aggregate.apply state
+
+  test <@ result = expectedState @>
+
+[<TenantProperty>]
+let aggregateApplyWasApprovedToAnyStateShouldReturnAStateWithoutPendingRequestAndCurrentId
+  (state: Aggregate.State)
+  (ValidTenantIdentifier rid) =
+  let event = WasApproved { id = rid }
+  let expectedState : Aggregate.State = { request = None; current = Some rid }
+
+  let result = event |> Aggregate.apply state
+
+  test <@ result = expectedState @>
+
+[<TenantProperty>]
+let aggregateApplyWasRetiredToAnyStateShouldReturnTheInitialState
+  (state: Aggregate.State) =
+  let event = WasRetired
+  let expectedState = Aggregate.initialState
+
+  let result = event |> Aggregate.apply state
+
+  test <@ result = expectedState @>
+
+(*********************
+ * Aggregate.handle
+ *********************)
+
+[<TenantProperty>]
+let aggregateHandleWithInvalidCommandShouldReturnError
+  (state: Aggregate.State)
+  (UnmatchingTenantIdentifier rid) =
+  let command = Request { id = rid }
+  let expectedErrors : ValidationItem list = [
+    { errorCode = nameof(Validators.matchesRegex)
+      property = "id"
+      message = mockStrings.mustBeAValidUrlSegment
+    }
+  ]
+
+  let result = command |> Aggregate.handle mockStrings state
+
+  test <@ result = Result.Error expectedErrors @>
+
+/// Request
+
+[<TenantProperty>]
+let aggregateHandleRequestOnNonExistingTenantShouldReturnWasRequestedEvent
+  (previousRequest: TenantIdentifier option)
+  (ValidTenantIdentifier rid) =
+  let state: Aggregate.State = { current = None; request = previousRequest }
+  let command = Request { id = rid }
+  let expectedEvents = [ WasRequested { id = rid } ]
+
+  let result = command |> Aggregate.handle mockStrings state
+
+  test <@ result = Result.Ok expectedEvents @>
+
+[<TenantProperty>]
+let aggregateHandleRequestOnExistingTenantShouldReturnWasRequestedEvent
+  (ValidTenantIdentifier currentIdentifier)
+  (ValidTenantIdentifier requestedIdentifier)
+  (previousRequest: TenantIdentifier option) =
+  currentIdentifier <> requestedIdentifier ==> lazy
+    let state: Aggregate.State = { current = Some currentIdentifier; request = previousRequest }
+    let command = Request { id = requestedIdentifier }
+    let expectedEvents = [ WasRequested { id = requestedIdentifier } ]
+
+    let result = command |> Aggregate.handle mockStrings state
+
+    test <@ result = Result.Ok expectedEvents @>
+
+[<TenantProperty>]
+let aggregateHandleRequestOnSameTenantIdShouldReturnNoEvents
+  (ValidTenantIdentifier currentIdentifier)
+  (previousRequest: TenantIdentifier option) =
+  let state: Aggregate.State = { current = Some currentIdentifier; request = previousRequest }
+  let command = Request { id = currentIdentifier }
+  let expectedEvents : Event list = []
+
+  let result = command |> Aggregate.handle mockStrings state
+
+  test <@ result = Result.Ok expectedEvents @>
+
+/// Approve
+
+[<TenantProperty>]
+let aggregateHandleApproveOnSameRequestedIdShouldReturnWasApprovedEvent
+  (currentState: TenantIdentifier option)
+  (ValidTenantIdentifier requestedId) =
+  let state: Aggregate.State = { current = currentState; request = Some requestedId }
+  let command = Approve { id = requestedId }
+  let expectedEvents = [ WasApproved { id = requestedId } ]
+
+  let result = command |> Aggregate.handle mockStrings state
+
+  test <@ result = Result.Ok expectedEvents @>
+
+[<TenantProperty>]
+let aggregateHandleApproveOnDistinctRequestedIdShouldReturnNoEvents
+  (currentState: TenantIdentifier option)
+  (ValidTenantIdentifier requestedId)
+  (ValidTenantIdentifier approvedId) =
+  requestedId <> approvedId ==> lazy
+    let state: Aggregate.State = { current = currentState; request = Some requestedId }
+    let command = Approve { id = approvedId }
+    let expectedEvents : Event list = []
+
+    let result = command |> Aggregate.handle mockStrings state
+
+    test <@ result = Result.Ok expectedEvents @>
+
+/// Reject
+
+[<TenantProperty>]
+let aggregateHandleRejectOnSameRequestedIdShouldReturnWasRejectedEvent
+  (currentState: TenantIdentifier option)
+  (ValidTenantIdentifier requestedId) =
+  let state: Aggregate.State = { current = currentState; request = Some requestedId }
+  let command = Reject { id = requestedId }
+  let expectedEvents = [ WasRejected ]
+
+  let result = command |> Aggregate.handle mockStrings state
+
+  test <@ result = Result.Ok expectedEvents @>
+
+[<TenantProperty>]
+let aggregateHandleRejectOnDistinctRequestedIdShouldReturnNoEvents
+  (currentState: TenantIdentifier option)
+  (ValidTenantIdentifier requestedId)
+  (ValidTenantIdentifier rejectedId) =
+  requestedId <> rejectedId ==> lazy
+    let state: Aggregate.State = { current = currentState; request = Some requestedId }
+    let command = Reject { id = rejectedId }
+    let expectedEvents : Event list = []
+
+    let result = command |> Aggregate.handle mockStrings state
+
+    test <@ result = Result.Ok expectedEvents @>
+
+/// Reject
+
+[<TenantProperty>]
+let aggregateHandleRetireOnNonInitialStateShouldReturnWasRetiredEvent
+  (state: Aggregate.State) =
+  state <> Aggregate.initialState ==> lazy
+    let command = Retire
+    let expectedEvents = [ WasRetired ]
+
+    let result = command |> Aggregate.handle mockStrings state
+
+    test <@ result = Result.Ok expectedEvents @>
+
+[<Fact>]
+let aggregateHandleRetireOnInitialStateShouldReturnNoEvents () =
+  let state = Aggregate.initialState
+  let command = Retire
+  let expectedEvents : Event list = []
+
+  let result = command |> Aggregate.handle mockStrings state
+
+  test <@ result = Result.Ok expectedEvents @>

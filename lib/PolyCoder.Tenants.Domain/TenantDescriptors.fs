@@ -1,4 +1,3 @@
-﻿[<RequireQualifiedAccess>]
 module PolyCoder.Tenants.Domain.TenantDescriptors
 
 type Data = {
