@@ -18,121 +18,6 @@ let mockStrings =
       member _.mustBeAValidUrlSegment = "mustBeAValidUrlSegment"
   }
 
-(***************
- * isNotEmpty
- ***************)
-
-[<Fact>]
-let isNotEmptyWithNullShouldReturnError () =
-  let propertyName = "my-property"
-  let value: string = null
-  let result = value |> Validators.isNotEmpty mockStrings propertyName
-  let expectedError: ValidationItem = {
-    errorCode = "isNotEmpty"
-    property = propertyName
-    message = "mustNotBeNull"
-  }
-
-  test <@ result = Errors [ expectedError ] @>
-
-[<Fact>]
-let isNotEmptyWithEmptyShouldReturnError () =
-  let propertyName = "my-property"
-  let value: string = ""
-  let result = value |> Validators.isNotEmpty mockStrings propertyName
-  let expectedError: ValidationItem = {
-    errorCode = "isNotEmpty"
-    property = propertyName
-    message = "mustNotBeEmpty"
-  }
-
-  test <@ result = Errors [ expectedError ] @>
-
-[<Theory>]
-[<InlineData(" ")>]
-[<InlineData("       ")>]
-[<InlineData("\t")>]
-[<InlineData("\r")>]
-[<InlineData("\r\n")>]
-let isNotEmptyWithWhiteSpaceShouldReturnOk (value: string) =
-  let propertyName = "my-property"
-  let result = value |> Validators.isNotEmpty mockStrings propertyName
-
-  test <@ result = Ok @>
-
-[<Property>]
-let isNotEmptyWithAnyNonEmptyShouldBeOk (NonEmptyString value) =
-  let propertyName = "my-property"
-  let result = value |> Validators.isNotEmpty mockStrings propertyName
-
-  test <@ result = Ok @>
-
-(***************************
- * isNotEmptyOrWhiteSpace
- ***************************)
-
-[<Fact>]
-let isNotEmptyOrWhiteSpaceWithNullShouldReturnError () =
-  let propertyName = "my-property"
-  let value: string = null
-  let result = value |> Validators.isNotEmptyOrWhiteSpace mockStrings propertyName
-  let expectedError: ValidationItem = {
-    errorCode = "isNotEmptyOrWhiteSpace"
-    property = propertyName
-    message = "mustNotBeNull"
-  }
-
-  test <@ result = Errors [ expectedError ] @>
-
-[<Fact>]
-let isNotEmptyOrWhiteSpaceWithEmptyShouldReturnError () =
-  let propertyName = "my-property"
-  let value: string = ""
-  let result = value |> Validators.isNotEmptyOrWhiteSpace mockStrings propertyName
-  let expectedError: ValidationItem = {
-    errorCode = "isNotEmptyOrWhiteSpace"
-    property = propertyName
-    message = "mustNotBeEmpty"
-  }
-
-  test <@ result = Errors [ expectedError ] @>
-
-[<Theory>]
-[<InlineData(" ")>]
-[<InlineData("       ")>]
-[<InlineData("\t")>]
-[<InlineData("\r")>]
-[<InlineData("\r\n")>]
-let isNotEmptyOrWhiteSpaceWithWhiteSpaceShouldReturnOk (value: string) =
-  let propertyName = "my-property"
-  let result = value |> Validators.isNotEmptyOrWhiteSpace mockStrings propertyName
-  let expectedError: ValidationItem = {
-    errorCode = "isNotEmptyOrWhiteSpace"
-    property = propertyName
-    message = "mustNotBeWhiteSpace"
-  }
-
-  test <@ result = Errors [ expectedError ] @>
-
-[<Property>]
-let isNotEmptyOrWhiteSpaceWithAnyNonEmptyShouldBeOk (NonWhiteSpaceString value) =
-  let propertyName = "my-property"
-  let result = value |> Validators.isNotEmptyOrWhiteSpace mockStrings propertyName
-
-  test <@ result = Ok @>
-
-(*********************
- * isNotShorterThan
- *********************)
-
-[<Property>]
-let isNotShorterThanWithNullShouldBeOk (NonNegativeInt minLength) =
-  let propertyName = "my-property"
-  let value: string = null
-  let result = value |> Validators.isNotShorterThan minLength mockStrings propertyName
-
-  test <@ result = Ok @>
-
 type StringOfLength = StringOfLength of string
 
 type StringOfLengthAtLeast5Chars =
@@ -143,13 +28,6 @@ type StringOfLengthAtLeast5Chars =
     |> Gen.map StringOfLength
     |> Arb.fromGen
 
-[<Property(Arbitrary = [| typeof<StringOfLengthAtLeast5Chars> |])>]
-let isNotShorterThanWithLongStringShouldBeOk (StringOfLength value) =
-  let propertyName = "my-property"
-  let result = value |> Validators.isNotShorterThan 5 mockStrings propertyName
-
-  test <@ result = Ok @>
-
 type StringOfLengthAtMost4Chars =
   static member StringOfLength() =
     Arb.Default.NonEmptyString().Generator
@@ -158,45 +36,156 @@ type StringOfLengthAtMost4Chars =
     |> Gen.map StringOfLength
     |> Arb.fromGen
 
-[<Property(Arbitrary = [| typeof<StringOfLengthAtMost4Chars> |])>]
-let isNotShorterThanWithShortStringShouldReturnError (StringOfLength value) =
-  let propertyName = "my-property"
-  let result = value |> Validators.isNotShorterThan 5 mockStrings propertyName
-  let expectedError: ValidationItem = {
-    errorCode = "isNotShorterThan"
-    property = propertyName
-    message = "mustNotBeShorterThan5"
-  }
+module IsNotEmpty =
+  [<Fact>]
+  let withNullShouldReturnError () =
+    let propertyName = "my-property"
+    let value: string = null
+    let result = value |> Validators.isNotEmpty mockStrings propertyName
+    let expectedError: ValidationItem = {
+      errorCode = "isNotEmpty"
+      property = propertyName
+      message = "mustNotBeNull"
+    }
 
-  test <@ result = Errors [ expectedError ] @>
+    test <@ result = Errors [ expectedError ] @>
 
-(*********************
- * isNotShorterThan
- *********************)
+  [<Fact>]
+  let withEmptyShouldReturnError () =
+    let propertyName = "my-property"
+    let value: string = ""
+    let result = value |> Validators.isNotEmpty mockStrings propertyName
+    let expectedError: ValidationItem = {
+      errorCode = "isNotEmpty"
+      property = propertyName
+      message = "mustNotBeEmpty"
+    }
 
-[<Property>]
-let isNotLongerThanWithNullShouldBeOk (NonNegativeInt minLength) =
-  let propertyName = "my-property"
-  let value: string = null
-  let result = value |> Validators.isNotLongerThan minLength mockStrings propertyName
+    test <@ result = Errors [ expectedError ] @>
 
-  test <@ result = Ok @>
+  [<Theory>]
+  [<InlineData(" ")>]
+  [<InlineData("       ")>]
+  [<InlineData("\t")>]
+  [<InlineData("\r")>]
+  [<InlineData("\r\n")>]
+  let withWhiteSpaceShouldReturnOk (value: string) =
+    let propertyName = "my-property"
+    let result = value |> Validators.isNotEmpty mockStrings propertyName
 
-[<Property(Arbitrary = [| typeof<StringOfLengthAtMost4Chars> |])>]
-let isNotLongerThanWithLongStringShouldBeOk (StringOfLength value) =
-  let propertyName = "my-property"
-  let result = value |> Validators.isNotLongerThan 4 mockStrings propertyName
+    test <@ result = Ok @>
 
-  test <@ result = Ok @>
+  [<Property>]
+  let withAnyNonEmptyShouldBeOk (NonEmptyString value) =
+    let propertyName = "my-property"
+    let result = value |> Validators.isNotEmpty mockStrings propertyName
 
-[<Property(Arbitrary = [| typeof<StringOfLengthAtLeast5Chars> |])>]
-let isNotLongerThanWithShortStringShouldReturnError (StringOfLength value) =
-  let propertyName = "my-property"
-  let result = value |> Validators.isNotLongerThan 4 mockStrings propertyName
-  let expectedError: ValidationItem = {
-    errorCode = "isNotLongerThan"
-    property = propertyName
-    message = "mustNotBeLongerThan4"
-  }
+    test <@ result = Ok @>
 
-  test <@ result = Errors [ expectedError ] @>
+module IsNotEmptyOrWhiteSpace =
+  [<Fact>]
+  let withNullShouldReturnError () =
+    let propertyName = "my-property"
+    let value: string = null
+    let result = value |> Validators.isNotEmptyOrWhiteSpace mockStrings propertyName
+    let expectedError: ValidationItem = {
+      errorCode = "isNotEmptyOrWhiteSpace"
+      property = propertyName
+      message = "mustNotBeNull"
+    }
+
+    test <@ result = Errors [ expectedError ] @>
+
+  [<Fact>]
+  let withEmptyShouldReturnError () =
+    let propertyName = "my-property"
+    let value: string = ""
+    let result = value |> Validators.isNotEmptyOrWhiteSpace mockStrings propertyName
+    let expectedError: ValidationItem = {
+      errorCode = "isNotEmptyOrWhiteSpace"
+      property = propertyName
+      message = "mustNotBeEmpty"
+    }
+
+    test <@ result = Errors [ expectedError ] @>
+
+  [<Theory>]
+  [<InlineData(" ")>]
+  [<InlineData("       ")>]
+  [<InlineData("\t")>]
+  [<InlineData("\r")>]
+  [<InlineData("\r\n")>]
+  let withWhiteSpaceShouldReturnOk (value: string) =
+    let propertyName = "my-property"
+    let result = value |> Validators.isNotEmptyOrWhiteSpace mockStrings propertyName
+    let expectedError: ValidationItem = {
+      errorCode = "isNotEmptyOrWhiteSpace"
+      property = propertyName
+      message = "mustNotBeWhiteSpace"
+    }
+
+    test <@ result = Errors [ expectedError ] @>
+
+  [<Property>]
+  let withAnyNonEmptyShouldBeOk (NonWhiteSpaceString value) =
+    let propertyName = "my-property"
+    let result = value |> Validators.isNotEmptyOrWhiteSpace mockStrings propertyName
+
+    test <@ result = Ok @>
+
+
+module IsNotShorterThan =
+  [<Property>]
+  let withNullShouldBeOk (NonNegativeInt minLength) =
+    let propertyName = "my-property"
+    let value: string = null
+    let result = value |> Validators.isNotShorterThan minLength mockStrings propertyName
+
+    test <@ result = Ok @>
+
+  [<Property(Arbitrary = [| typeof<StringOfLengthAtLeast5Chars> |])>]
+  let withLongStringShouldBeOk (StringOfLength value) =
+    let propertyName = "my-property"
+    let result = value |> Validators.isNotShorterThan 5 mockStrings propertyName
+
+    test <@ result = Ok @>
+
+  [<Property(Arbitrary = [| typeof<StringOfLengthAtMost4Chars> |])>]
+  let withShortStringShouldReturnError (StringOfLength value) =
+    let propertyName = "my-property"
+    let result = value |> Validators.isNotShorterThan 5 mockStrings propertyName
+    let expectedError: ValidationItem = {
+      errorCode = "isNotShorterThan"
+      property = propertyName
+      message = "mustNotBeShorterThan5"
+    }
+
+    test <@ result = Errors [ expectedError ] @>
+
+module IsNotLongerThan =
+  [<Property>]
+  let withNullShouldBeOk (NonNegativeInt minLength) =
+    let propertyName = "my-property"
+    let value: string = null
+    let result = value |> Validators.isNotLongerThan minLength mockStrings propertyName
+
+    test <@ result = Ok @>
+
+  [<Property(Arbitrary = [| typeof<StringOfLengthAtMost4Chars> |])>]
+  let withLongStringShouldBeOk (StringOfLength value) =
+    let propertyName = "my-property"
+    let result = value |> Validators.isNotLongerThan 4 mockStrings propertyName
+
+    test <@ result = Ok @>
+
+  [<Property(Arbitrary = [| typeof<StringOfLengthAtLeast5Chars> |])>]
+  let withShortStringShouldReturnError (StringOfLength value) =
+    let propertyName = "my-property"
+    let result = value |> Validators.isNotLongerThan 4 mockStrings propertyName
+    let expectedError: ValidationItem = {
+      errorCode = "isNotLongerThan"
+      property = propertyName
+      message = "mustNotBeLongerThan4"
+    }
+
+    test <@ result = Errors [ expectedError ] @>

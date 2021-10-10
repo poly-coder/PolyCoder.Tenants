@@ -4,6 +4,7 @@ module PolyCoder.Tenants.Domain.TestUtils
 open FsCheck
 open FsCheck.Xunit
 open System.Text.RegularExpressions
+open PolyCoder.Tenants.Domain
 
 let validTenantIdentifierRegex = Regex(@"^([a-z][a-z0-9]*)(\-([a-z][a-z0-9]*))*$")
 
@@ -13,6 +14,9 @@ type EmptyOrWhiteSpaceString = EmptyOrWhiteSpaceString of string
 type ValidTenantIdentifier = ValidTenantIdentifier of string
 type InvalidTenantIdentifier = InvalidTenantIdentifier of string
 type UnmatchingTenantIdentifier = UnmatchingTenantIdentifier of string
+
+type ValidTenantTitle = ValidTenantTitle of string
+type ValidTenantDescription = ValidTenantDescription of string
 
 let internal whitespaces = [' '; '\t'; '\n'; '\r'; '\f']
 let internal atoz = ['a'..'z']
@@ -75,6 +79,45 @@ type TenantArbitraries() =
       |> Gen.filter (fun s -> System.String.IsNullOrWhiteSpace s |> not)
       |> Gen.map UnmatchingTenantIdentifier
       |> Arb.fromGen
+
+  static member ValidTenantTitle() =
+    let validTitle (title: string) =
+      System.String.IsNullOrWhiteSpace title |> not &&
+      title.Length >= TenantDescriptors.Validate.MinTitleLength &&
+      title.Length <= TenantDescriptors.Validate.MaxTitleLength
+
+    let stringArb = Arb.Default.String()
+
+    let generator =
+      stringArb.Generator
+        |> Gen.filter (validTitle)
+        |> Gen.map ValidTenantTitle
+
+    let shrinker (ValidTenantTitle title) =
+      stringArb.Shrinker title
+        |> Seq.filter validTitle
+        |> Seq.map ValidTenantTitle
+
+    Arb.fromGenShrink (generator, shrinker)
+
+  static member ValidTenantDescription() =
+    let validDescription (description: string) =
+      isNull description ||
+      description.Length <= TenantDescriptors.Validate.MaxDescriptionLength
+
+    let stringArb = Arb.Default.String()
+
+    let generator =
+      stringArb.Generator
+        |> Gen.filter (validDescription)
+        |> Gen.map ValidTenantDescription
+
+    let shrinker (ValidTenantDescription description) =
+      stringArb.Shrinker description
+        |> Seq.filter validDescription
+        |> Seq.map ValidTenantDescription
+
+    Arb.fromGenShrink (generator, shrinker)
 
 type TenantProperty() =
   inherit PropertyAttribute(Arbitrary = [| typeof<TenantArbitraries> |])
